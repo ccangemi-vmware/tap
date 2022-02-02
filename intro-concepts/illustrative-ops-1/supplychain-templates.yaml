@@ -14,7 +14,7 @@ metadata:
 spec:
   # The ClusterSourceTemplate `url` and `revision` output fileds will be
   # dynamically populated from the status of the embedded GitRepository resource
-  urlPath: .status.artifact.revision
+  urlPath: .status.artifact.url
   revisionPath: .status.artifact.revision
   template:
     apiVersion: source.toolkit.fluxcd.io/v1beta1
