@@ -1,0 +1,72 @@
+# - No mechanism to inject values that depend on the output of other resources (see comments below)
+# - No mechanism to re-submit resources to Kubernetes when new values are available
+
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: GitRepository
+metadata:
+  name: hello-world
+  labels:
+    app.kubernetes.io/part-of: hello-world
+spec:
+  interval: 1m
+  url: https://github.com/ciberkleid/go-sample-app.git
+  ref: master
+---
+apiVersion: kpack.io/v1alpha1
+kind: Image
+metadata:
+  name: hello-world
+  lables:
+    app.kubernetes.io/part-of: hello-world
+spec:
+  tag: ciberkleid/hello-world
+  serviceAccount: service-account
+  builder:
+    kind: ClusterBuilder
+    name: builder
+  source:
+    blob:
+      # Inject value of status.artifact.url from gitrepository/hello-world
+      url: UNKNOWN
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world
+  labels:
+    app.kubernetes.io/part-of: hello-world
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: hello-world
+    spec:
+      serviceAccountName: some-service-account
+      containers:
+        - name: workload
+        # Inject value of image.status.latestImage from image/hello-world
+        image: UNKNOWN
+        env: {}
+        ports:
+          - name: http-port
+            containerPort: 8080
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: hello-world
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world
+  labels:
+    app.kubernetes.io/part-of: hello-world
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app.kubernetes.io/part-of: hello-world
+  type: ClusterIP

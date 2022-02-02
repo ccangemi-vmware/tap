@@ -1,0 +1,75 @@
+# This configuration file is meant for illustrative purposes only
+# Challenges:
+#  - It containes templated configuration that cannot be interpreted in Kubernetes
+#  - It lacks a mechanism to submit the resources to Kubernetes when templated values change
+
+
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: GitRepository
+metadata:
+  name: $(workload.metadata.name)$
+  labels:
+    app.kubernetes.io/part-of: $(workload.metadata.name)$
+spec:
+  interval: 1m
+  url: $(workload.spec.source.git.url)$
+  ref: $(workload.spec.source.git.ref)$
+---
+apiVersion: kpack.io/v1alpha1
+kind: Image
+metadata:
+  name: $(workload.metadata.name)$
+  lables:
+    app.kubernetes.io/part-of: $(workload.metadata.name)$
+spec:
+  tag: $(params.imageRepo)$$(workload.metadata.name)$
+  serviceAccount: service-account
+  builder:
+    kind: ClusterBuilder
+    name: builder
+  source:
+    blob:
+      # some url injected by Cartographer dynamically
+      url: $(source.url)$
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $(workload.metadata.name)$
+  labels:
+    app.kubernetes.io/part-of: $(workload.metadata.name)$
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: $(workload.metadata.name)$
+    spec:
+      serviceAccountName: $(workload.spec.serviceAccountName)$
+      containers:
+        - name: workload
+          # image injected by Cartographer dynamically
+          image: $(image)$
+          env: {}
+          ports:
+            - name: http-port
+              containerPort: $(params.containerPort)$
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: $(workload.metadata.name)$
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: $(workload.metadata.name)$
+  labels:
+    app.kubernetes.io/part-of: $(workload.metadata.name)$
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: $(params.containerPort)$
+  selector:
+    app.kubernetes.io/part-of: $(workload.metadata.name)$
+  type: ClusterIP
