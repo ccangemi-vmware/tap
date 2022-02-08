@@ -8,6 +8,6 @@ metadata:
 spec:
   source:
     git:
-      url: https://github.com/sample-accelerators/tanzu-java-web-app
+      url: https://github.com/ccangemi-vmware/tap/tree/main/tanzu-java-web-app
       ref:
         branch: main
